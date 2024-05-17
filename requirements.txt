@@ -1,0 +1,4 @@
+instagrapi
+httpx
+csv
+threading
