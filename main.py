@@ -58,7 +58,8 @@ def get_2fa_code():
     return two_factor_code if two_factor_code else '', 200
 
 def run_flask():
-    app.run(host='0.0.0.0', port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
 
 def download_image(url, path):
     with httpx.Client() as client:
