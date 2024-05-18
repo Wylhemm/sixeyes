@@ -1,3 +1,4 @@
+import os
 import time
 import random
 import httpx
@@ -23,12 +24,12 @@ GLOBAL_MESSAGES = [
 # List of accounts and proxies
 ACCOUNTS = [
     {
-        "ig_username": "sanazpiramun22",
-        "ig_password": "horoz123",
-        "proxy_ip": "portal.anyip.io",
-        "proxy_port": "1080",
-        "proxy_username": "user_5e31b4,type_residential,session_randSession8500",
-        "proxy_password": "81f645"
+        "ig_username": os.getenv("IG_USERNAME"),
+        "ig_password": os.getenv("IG_PASSWORD"),
+        "proxy_ip": os.getenv("PROXY_IP"),
+        "proxy_port": os.getenv("PROXY_PORT"),
+        "proxy_username": os.getenv("PROXY_USERNAME"),
+        "proxy_password": os.getenv("PROXY_PASSWORD")
     }
 ]
 
