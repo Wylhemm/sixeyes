@@ -3,6 +3,7 @@ import threading
 import time
 from flask import Flask, render_template, request, session
 from instagrapi import Client
+from instagrapi.exceptions import TwoFactorRequired, BadPassword, ReloginAttemptExceeded
 import httpx
 
 app = Flask(__name__)
@@ -17,11 +18,14 @@ def download_image(url, path):
 def login(ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_password):
     client = Client()
     client.set_proxy(f"http://{proxy_username}:{proxy_password}@{proxy_ip}:{proxy_port}")
-    client.login(ig_username, ig_password)
-
-    if client.two_factor_required:
+    
+    try:
+        client.login(ig_username, ig_password)
+    except TwoFactorRequired:
         return client, True
-
+    except (BadPassword, ReloginAttemptExceeded):
+        return None, False
+    
     return client, False
 
 def send_dm(client, username, message):
@@ -84,6 +88,9 @@ def login_route():
 
     client, two_factor_required = login(ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_password)
 
+    if client is None:
+        return "Invalid username or password", 400
+    
     if two_factor_required:
         session['client'] = client
         return render_template("index.html", two_factor_required=True)
