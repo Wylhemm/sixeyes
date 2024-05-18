@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Instagram Bot</title>
+</head>
+<body>
+    <h1>Instagram Bot</h1>
+    <form action="/login" method="post">
+        <label for="ig_username">Instagram Username:</label>
+        <input type="text" id="ig_username" name="ig_username" required><br>
+
+        <label for="ig_password">Instagram Password:</label>
+        <input type="password" id="ig_password" name="ig_password" required><br>
+
+        <label for="proxy_ip">Proxy IP:</label>
+        <input type="text" id="proxy_ip" name="proxy_ip" required><br>
+
+        <label for="proxy_port">Proxy Port:</label>
+        <input type="text" id="proxy_port" name="proxy_port" required><br>
+
+        <label for="proxy_username">Proxy Username:</label>
+        <input type="text" id="proxy_username" name="proxy_username" required><br>
+
+        <label for="proxy_password">Proxy Password:</label>
+        <input type="password" id="proxy_password" name="proxy_password" required><br>
+
+        <input type="submit" value="Login">
+    </form>
+
+    {% if two_factor_required %}
+    <form action="/two_factor" method="post">
+        <label for="two_factor_code">Two-Factor Authentication Code:</label>
+        <input type="text" id="two_factor_code" name="two_factor_code" required><br>
+
+        <input type="submit" value="Submit">
+    </form>
+    {% endif %}
+</body>
+</html>

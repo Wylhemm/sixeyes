@@ -1,4 +1,4 @@
 instagrapi
 httpx
-Pillow
-Flask
+flask
+gunicorn
