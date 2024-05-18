@@ -1,15 +1,13 @@
 import os
 import time
 import random
+import requests
 import httpx
 import csv
 import threading
+from flask import Flask, request, render_template_string
 from instagrapi import Client
 from instagrapi.exceptions import TwoFactorRequired, ClientError
-import os
-from instagrapi import Client
-from instagrapi.exceptions import TwoFactorRequired, ClientError
-
 
 # Define the range for the delay in seconds
 MIN_DELAY = 15
@@ -37,6 +35,31 @@ ACCOUNTS = [
     }
 ]
 
+# Flask app to handle 2FA input
+app = Flask(__name__)
+two_factor_code = None
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    global two_factor_code
+    if request.method == 'POST':
+        two_factor_code = request.form['2fa_code']
+        return '2FA code received'
+    return render_template_string('''
+        <form method="post">
+            2FA Code: <input type="text" name="2fa_code">
+            <input type="submit" value="Submit">
+        </form>
+    ''')
+
+@app.route('/get_2fa_code', methods=['GET'])
+def get_2fa_code():
+    global two_factor_code
+    return two_factor_code if two_factor_code else '', 200
+
+def run_flask():
+    app.run(host='0.0.0.0', port=5000)
+
 def download_image(url, path):
     with httpx.Client() as client:
         response = client.get(url)
@@ -47,7 +70,6 @@ def download_image(url, path):
         else:
             print(f"Failed to download image from {url}")
 
-
 def login(ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_password):
     client = Client()
     proxy = f"http://{proxy_username}:{proxy_password}@{proxy_ip}:{proxy_port}"
@@ -57,13 +79,17 @@ def login(ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_
         return client
     except TwoFactorRequired as e:
         print(f"Two-factor authentication required for {ig_username}.")
-        two_factor_code = input(f"Enter the 2FA code for {ig_username}: ")
+        while True:
+            response = requests.get('http://localhost:5000/get_2fa_code')
+            if response.status_code == 200 and response.text:
+                two_factor_code = response.text
+                break
+            time.sleep(5)
         client.two_factor_login(ig_username, ig_password, two_factor_code)
         return client
     except Exception as e:
         print(f"Login failed for {ig_username}: {e}")
         return None
-
 
 def send_dm(client, username, message):
     try:
@@ -159,6 +185,9 @@ def send_messages_from_account(account, users, batch_size):
     track_responses(client, sent_messages)
 
 if __name__ == "__main__":
+    # Start the Flask app in a separate thread
+    threading.Thread(target=run_flask).start()
+
     # Download the image before sending DMs
     download_image(IMAGE_URL, IMAGE_PATH)
 
