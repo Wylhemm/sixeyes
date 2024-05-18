@@ -24,12 +24,12 @@ GLOBAL_MESSAGES = [
 # List of accounts and proxies
 ACCOUNTS = [
     {
-        "ig_username": os.getenv("IG_USERNAME"),
-        "ig_password": os.getenv("IG_PASSWORD"),
-        "proxy_ip": os.getenv("PROXY_IP"),
-        "proxy_port": os.getenv("PROXY_PORT"),
-        "proxy_username": os.getenv("PROXY_USERNAME"),
-        "proxy_password": os.getenv("PROXY_PASSWORD")
+        "ig_username": "sanazpiramun22",
+        "ig_password": "horoz123",
+        "proxy_ip": "portal.anyip.io",
+        "proxy_port": "1080",
+        "proxy_username": "user_42079f,type_mobile,country_US,lat_40.417287,lon_-82.907123,asn_21928,session_randSession1170",
+        "proxy_password": "739fe7"
     }
 ]
 
