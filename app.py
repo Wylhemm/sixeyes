@@ -1,19 +1,14 @@
 import csv
 import threading
 import time
-from flask import Flask, render_template, request, session, redirect, url_for, flash
+from flask import Flask, render_template, request, session, redirect, url_for
 from instagrapi import Client
 from instagrapi.exceptions import TwoFactorRequired, BadPassword, ReloginAttemptExceeded
 import httpx
 import os
-import logging
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'your_secret_key')  # Replace with your own secret key
-app.config['SESSION_TYPE'] = 'filesystem'
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'your_secret_key')  # Replace with your own secret key from env variable
 
 def download_image(url, path):
     with httpx.Client() as client:
@@ -28,6 +23,7 @@ def login(ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_
     try:
         client.login(ig_username, ig_password)
     except TwoFactorRequired:
+        # Store minimal required data in the session for security
         session['ig_username'] = ig_username
         session['ig_password'] = ig_password
         session['proxy_ip'] = proxy_ip
@@ -36,14 +32,14 @@ def login(ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_
         session['proxy_password'] = proxy_password
         return client, True
     except (BadPassword, ReloginAttemptExceeded) as e:
-        logger.error(f"Login failed: {e}")
-        return None, False
+        return None, str(e)
     
     return client, False
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    two_factor_required = 'two_factor_required' in session
+    return render_template("index.html", two_factor_required=two_factor_required)
 
 @app.route("/login", methods=["POST"])
 def login_route():
@@ -54,18 +50,18 @@ def login_route():
     proxy_username = request.form["proxy_username"]
     proxy_password = request.form["proxy_password"]
 
-    client, two_factor_required = login(ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_password)
+    client, result = login(ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_password)
 
     if client is None:
-        flash("Invalid username or password", "error")
-        return redirect(url_for('index'))
+        return f"Error: {result}", 400
     
-    if two_factor_required:
+    if result:  # result is True if two_factor_required
+        session['two_factor_required'] = True
         session['client'] = client
-        return render_template("index.html", two_factor_required=True)
-    else:
-        flash("Login successful!", "success")
         return redirect(url_for('index'))
+    else:
+        session.pop('two_factor_required', None)
+        return "Login successful!"
 
 @app.route("/two_factor", methods=["POST"])
 def two_factor_route():
@@ -84,15 +80,12 @@ def two_factor_route():
 
         try:
             client.two_factor_login(two_factor_code)
-            flash("Two-factor authentication successful!", "success")
-            return redirect(url_for('index'))
+            session.pop('two_factor_required', None)
+            return "Two-factor authentication successful!"
         except Exception as e:
-            logger.error(f"Two-factor authentication failed: {e}")
-            flash(f"Two-factor authentication failed: {str(e)}", "error")
-            return redirect(url_for('index'))
+            return f"Two-factor authentication failed: {str(e)}", 400
     else:
-        flash("Invalid session", "error")
-        return redirect(url_for('index'))
+        return "Invalid session", 400
 
 def read_users_from_csv(file_path):
     users = []
@@ -108,7 +101,7 @@ def send_dm(client, username, message):
     client.direct_send_photo("image.jpg", user_ids=[user_id])
 
 def generate_random_delay(min_delay, max_delay):
-    return time.sleep(random.uniform(min_delay, max_delay))
+    time.sleep(random.uniform(min_delay, max_delay))
 
 def track_responses(client, sent_messages):
     while True:
@@ -127,16 +120,16 @@ def track_responses(client, sent_messages):
 
 def send_messages_from_account(account, users, batch_size):
     ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_password = account
-    client, two_factor_required = login(ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_password)
+    client, result = login(ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_password)
 
-    if client is None or two_factor_required:
-        print(f"Failed to login for account: {ig_username}")
+    if client is None or result:
+        print(f"Failed to login for account: {ig_username} - {result}")
         return
     
     sent_messages = []
 
     for i in range(0, len(users), batch_size):
-        batch_users = users[i:i+batch_size]
+        batch_users = users[i:i + batch_size]
         for user in batch_users:
             send_dm(client, user, "Hello! Check out this amazing content.")
             sent_messages.append(client.direct_threads[0].id)
