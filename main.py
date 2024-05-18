@@ -6,6 +6,10 @@ import csv
 import threading
 from instagrapi import Client
 from instagrapi.exceptions import TwoFactorRequired, ClientError
+import os
+from instagrapi import Client
+from instagrapi.exceptions import TwoFactorRequired, ClientError
+
 
 # Define the range for the delay in seconds
 MIN_DELAY = 15
@@ -43,6 +47,7 @@ def download_image(url, path):
         else:
             print(f"Failed to download image from {url}")
 
+
 def login(ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_password):
     client = Client()
     proxy = f"http://{proxy_username}:{proxy_password}@{proxy_ip}:{proxy_port}"
@@ -58,6 +63,7 @@ def login(ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_
     except Exception as e:
         print(f"Login failed for {ig_username}: {e}")
         return None
+
 
 def send_dm(client, username, message):
     try:
