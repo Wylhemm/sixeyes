@@ -1,5 +1,3 @@
 instagrapi
 httpx
 Pillow
-time
-random
