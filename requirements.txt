@@ -2,3 +2,4 @@ instagrapi
 httpx
 flask
 gunicorn
+pillow
