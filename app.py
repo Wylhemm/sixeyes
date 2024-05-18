@@ -1,11 +1,12 @@
 import csv
 import threading
 import time
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session
 from instagrapi import Client
 import httpx
 
 app = Flask(__name__)
+app.secret_key = 'your_secret_key'  # Replace with your own secret key
 
 def download_image(url, path):
     with httpx.Client() as client:
@@ -19,10 +20,9 @@ def login(ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_
     client.login(ig_username, ig_password)
 
     if client.two_factor_required:
-        two_factor_code = input("Enter the 2FA code: ")
-        client.two_factor_login(two_factor_code)
+        return client, True
 
-    return client
+    return client, False
 
 def send_dm(client, username, message):
     user_id = client.user_id_from_username(username)
@@ -57,7 +57,7 @@ def read_users_from_csv(file_path):
 
 def send_messages_from_account(account, users, batch_size):
     ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_password = account
-    client = login(ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_password)
+    client, _ = login(ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_password)
     sent_messages = []
 
     for i in range(0, len(users), batch_size):
@@ -82,9 +82,10 @@ def login_route():
     proxy_username = request.form["proxy_username"]
     proxy_password = request.form["proxy_password"]
 
-    client = login(ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_password)
+    client, two_factor_required = login(ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_password)
 
-    if client.two_factor_required:
+    if two_factor_required:
+        session['client'] = client
         return render_template("index.html", two_factor_required=True)
     else:
         return "Login successful!"
@@ -92,9 +93,13 @@ def login_route():
 @app.route("/two_factor", methods=["POST"])
 def two_factor_route():
     two_factor_code = request.form["two_factor_code"]
-    # Use the two_factor_code to complete the login process
-    # ...
-    return "Two-factor authentication successful!"
+    client = session.get('client')
+
+    if client:
+        client.two_factor_login(two_factor_code)
+        return "Two-factor authentication successful!"
+    else:
+        return "Invalid session", 400
 
 if __name__ == "__main__":
     download_image("https://i.kym-cdn.com/photos/images/original/002/733/202/719.jpg", "image.jpg")

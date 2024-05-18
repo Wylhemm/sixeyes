@@ -2,37 +2,80 @@
 <html>
 <head>
     <title>Instagram Bot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        form {
+            margin-top: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
 <body>
     <h1>Instagram Bot</h1>
-    <form action="/login" method="post">
-        <label for="ig_username">Instagram Username:</label>
-        <input type="text" id="ig_username" name="ig_username" required><br>
-
-        <label for="ig_password">Instagram Password:</label>
-        <input type="password" id="ig_password" name="ig_password" required><br>
-
-        <label for="proxy_ip">Proxy IP:</label>
-        <input type="text" id="proxy_ip" name="proxy_ip" required><br>
-
-        <label for="proxy_port">Proxy Port:</label>
-        <input type="text" id="proxy_port" name="proxy_port" required><br>
-
-        <label for="proxy_username">Proxy Username:</label>
-        <input type="text" id="proxy_username" name="proxy_username" required><br>
-
-        <label for="proxy_password">Proxy Password:</label>
-        <input type="password" id="proxy_password" name="proxy_password" required><br>
-
-        <input type="submit" value="Login">
-    </form>
 
     {% if two_factor_required %}
     <form action="/two_factor" method="post">
         <label for="two_factor_code">Two-Factor Authentication Code:</label>
-        <input type="text" id="two_factor_code" name="two_factor_code" required><br>
-
+        <input type="text" id="two_factor_code" name="two_factor_code" required>
         <input type="submit" value="Submit">
+    </form>
+    {% else %}
+    <form action="/login" method="post">
+        <label for="ig_username">Instagram Username:</label>
+        <input type="text" id="ig_username" name="ig_username" required>
+
+        <label for="ig_password">Instagram Password:</label>
+        <input type="password" id="ig_password" name="ig_password" required>
+
+        <label for="proxy_ip">Proxy IP:</label>
+        <input type="text" id="proxy_ip" name="proxy_ip" required>
+
+        <label for="proxy_port">Proxy Port:</label>
+        <input type="text" id="proxy_port" name="proxy_port" required>
+
+        <label for="proxy_username">Proxy Username:</label>
+        <input type="text" id="proxy_username" name="proxy_username" required>
+
+        <label for="proxy_password">Proxy Password:</label>
+        <input type="password" id="proxy_password" name="proxy_password" required>
+
+        <input type="submit" value="Login">
     </form>
     {% endif %}
 </body>

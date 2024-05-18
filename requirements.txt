@@ -2,4 +2,4 @@ instagrapi
 httpx
 flask
 gunicorn
-pillow
+pillow>=8.1.1
