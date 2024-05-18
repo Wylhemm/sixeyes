@@ -1,4 +1,4 @@
 instagrapi
 httpx
-csv
 threading
+Pillow
