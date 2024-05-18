@@ -1,5 +1,4 @@
 instagrapi
-csv
 httpx
 Pillow
 time
