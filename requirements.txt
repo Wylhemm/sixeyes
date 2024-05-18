@@ -1,8 +1,6 @@
 instagrapi
-threading
 csv
 httpx
 Pillow
-os
 time
 random
