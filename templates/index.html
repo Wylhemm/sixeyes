@@ -1,45 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Instagram Login</title>
+    <title>Instagram DM Sender</title>
 </head>
 <body>
-    <h1>Instagram Login</h1>
-    {% if two_factor_required %}
-        <form action="{{ url_for('two_factor_route') }}" method="POST">
-            <label for="two_factor_code">Enter 2FA Code:</label>
-            <input type="text" id="two_factor_code" name="two_factor_code" required>
-            <button type="submit">Submit</button>
-        </form>
-    {% elif challenge_required %}
-        <form action="{{ url_for('challenge_route') }}" method="POST">
-            <label for="challenge_code">Enter Challenge Code:</label>
-            <input type="text" id="challenge_code" name="challenge_code" required>
-            <button type="submit">Submit</button>
-        </form>
-    {% else %}
-        <form action="{{ url_for('login_route') }}" method="POST">
-            <label for="ig_username">Username:</label>
-            <input type="text" id="ig_username" name="ig_username" required>
-            <br>
-            <label for="ig_password">Password:</label>
-            <input type="password" id="ig_password" name="ig_password" required>
-            <br>
-            <label for="proxy_ip">Proxy IP:</label>
-            <input type="text" id="proxy_ip" name="proxy_ip">
-            <br>
-            <label for="proxy_port">Proxy Port:</label>
-            <input type="text" id="proxy_port" name="proxy_port">
-            <br>
-            <label for="proxy_username">Proxy Username:</label>
-            <input type="text" id="proxy_username" name="proxy_username">
-            <br>
-            <label for="proxy_password">Proxy Password:</label>
-            <input type="password" id="proxy_password" name="proxy_password">
-            <br>
-            <button type="submit">Login</button>
-        </form>
-    {% endif %}
+    <h1>Instagram DM Sender</h1>
+    <form method="post">
+        <label for="username">Instagram Username:</label>
+        <input type="text" id="username" name="username" required><br>
+
+        <label for="password">Instagram Password:</label>
+        <input type="password" id="password" name="password" required><br>
+
+        <label for="message">Message:</label>
+        <textarea id="message" name="message" required></textarea><br>
+
+        <input type="submit" value="Send Messages">
+    </form>
 </body>
 </html>
