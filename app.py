@@ -3,7 +3,7 @@ import threading
 import time
 from flask import Flask, render_template, request, session, redirect, url_for
 from instagrapi import Client
-from instagrapi.exceptions import TwoFactorRequired, BadPassword, ReloginAttemptExceeded
+from instagrapi.exceptions import TwoFactorRequired, BadPassword, ReloginAttemptExceeded, ChallengeRequired
 import httpx
 import os
 
@@ -22,6 +22,15 @@ def login(ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_
 
     try:
         client.login(ig_username, ig_password)
+    except ChallengeRequired as e:
+        session['challenge_url'] = client.last_json.get('challenge', {}).get('url')
+        session['ig_username'] = ig_username
+        session['ig_password'] = ig_password
+        session['proxy_ip'] = proxy_ip
+        session['proxy_port'] = proxy_port
+        session['proxy_username'] = proxy_username
+        session['proxy_password'] = proxy_password
+        return client, 'challenge'
     except TwoFactorRequired:
         # Store minimal required data in the session for security
         session['ig_username'] = ig_username
@@ -30,16 +39,17 @@ def login(ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_
         session['proxy_port'] = proxy_port
         session['proxy_username'] = proxy_username
         session['proxy_password'] = proxy_password
-        return client, True
+        return client, '2fa'
     except (BadPassword, ReloginAttemptExceeded) as e:
         return None, str(e)
     
-    return client, False
+    return client, 'success'
 
 @app.route("/")
 def index():
-    two_factor_required = 'two_factor_required' in session
-    return render_template("index.html", two_factor_required=two_factor_required)
+    two_factor_required = '2fa' in session
+    challenge_required = 'challenge_url' in session
+    return render_template("index.html", two_factor_required=two_factor_required, challenge_required=challenge_required)
 
 @app.route("/login", methods=["POST"])
 def login_route():
@@ -55,31 +65,33 @@ def login_route():
     if client is None:
         return f"Error: {result}", 400
     
-    if result:  # result is True if two_factor_required
-        session['two_factor_required'] = True
+    if result == '2fa':
+        session['2fa'] = True
+        return redirect(url_for('index'))
+    elif result == 'challenge':
+        session['challenge'] = True
         return redirect(url_for('index'))
     else:
-        session.pop('two_factor_required', None)
+        session.pop('2fa', None)
+        session.pop('challenge', None)
         return "Login successful!"
 
 @app.route("/two_factor", methods=["POST"])
 def two_factor_route():
     two_factor_code = request.form["two_factor_code"]
-    client = Client()
-
-    # Retrieve the stored session data
     ig_username = session['ig_username']
     ig_password = session['ig_password']
     proxy_ip = session['proxy_ip']
     proxy_port = session['proxy_port']
     proxy_username = session['proxy_username']
     proxy_password = session['proxy_password']
-
-    client.set_proxy(f"http://{proxy_username}:{proxy_password}@{proxy_ip}:{proxy_port}")
     
+    client = Client()
+    client.set_proxy(f"http://{proxy_username}:{proxy_password}@{proxy_ip}:{proxy_port}")
+
     try:
-        client.two_factor_login(ig_username, ig_password, two_factor_code)
-        session.pop('two_factor_required', None)
+        client.login(ig_username, ig_password, two_factor_code)
+        session.pop('2fa', None)
         session.pop('ig_username', None)
         session.pop('ig_password', None)
         session.pop('proxy_ip', None)
@@ -89,6 +101,34 @@ def two_factor_route():
         return "Two-factor authentication successful!"
     except Exception as e:
         return f"Two-factor authentication failed: {str(e)}", 400
+
+@app.route("/challenge", methods=["POST"])
+def challenge_route():
+    challenge_code = request.form["challenge_code"]
+    ig_username = session['ig_username']
+    ig_password = session['ig_password']
+    proxy_ip = session['proxy_ip']
+    proxy_port = session['proxy_port']
+    proxy_username = session['proxy_username']
+    proxy_password = session['proxy_password']
+    challenge_url = session['challenge_url']
+    
+    client = Client()
+    client.set_proxy(f"http://{proxy_username}:{proxy_password}@{proxy_ip}:{proxy_port}")
+    
+    try:
+        client.challenge_resolve_manual(challenge_url, challenge_code)
+        session.pop('challenge', None)
+        session.pop('challenge_url', None)
+        session.pop('ig_username', None)
+        session.pop('ig_password', None)
+        session.pop('proxy_ip', None)
+        session.pop('proxy_port', None)
+        session.pop('proxy_username', None)
+        session.pop('proxy_password', None)
+        return "Challenge resolved successfully!"
+    except Exception as e:
+        return f"Challenge resolution failed: {str(e)}", 400
 
 def read_users_from_csv(file_path):
     users = []
@@ -125,7 +165,7 @@ def send_messages_from_account(account, users, batch_size):
     ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_password = account
     client, result = login(ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_password)
 
-    if client is None or result:
+    if client is None or result != 'success':
         print(f"Failed to login for account: {ig_username} - {result}")
         return
     
