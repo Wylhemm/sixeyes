@@ -19,7 +19,7 @@ def download_image(url, path):
 def login(ig_username, ig_password, proxy_ip, proxy_port, proxy_username, proxy_password):
     client = Client()
     client.set_proxy(f"http://{proxy_username}:{proxy_password}@{proxy_ip}:{proxy_port}")
-    
+
     try:
         client.login(ig_username, ig_password)
     except TwoFactorRequired:
@@ -57,7 +57,6 @@ def login_route():
     
     if result:  # result is True if two_factor_required
         session['two_factor_required'] = True
-        session['client'] = client
         return redirect(url_for('index'))
     else:
         session.pop('two_factor_required', None)
@@ -66,26 +65,30 @@ def login_route():
 @app.route("/two_factor", methods=["POST"])
 def two_factor_route():
     two_factor_code = request.form["two_factor_code"]
-    client = session.get('client')
+    client = Client()
 
-    if client:
-        ig_username = session['ig_username']
-        ig_password = session['ig_password']
-        proxy_ip = session['proxy_ip']
-        proxy_port = session['proxy_port']
-        proxy_username = session['proxy_username']
-        proxy_password = session['proxy_password']
+    # Retrieve the stored session data
+    ig_username = session['ig_username']
+    ig_password = session['ig_password']
+    proxy_ip = session['proxy_ip']
+    proxy_port = session['proxy_port']
+    proxy_username = session['proxy_username']
+    proxy_password = session['proxy_password']
 
-        client.set_proxy(f"http://{proxy_username}:{proxy_password}@{proxy_ip}:{proxy_port}")
-
-        try:
-            client.two_factor_login(two_factor_code)
-            session.pop('two_factor_required', None)
-            return "Two-factor authentication successful!"
-        except Exception as e:
-            return f"Two-factor authentication failed: {str(e)}", 400
-    else:
-        return "Invalid session", 400
+    client.set_proxy(f"http://{proxy_username}:{proxy_password}@{proxy_ip}:{proxy_port}")
+    
+    try:
+        client.two_factor_login(ig_username, ig_password, two_factor_code)
+        session.pop('two_factor_required', None)
+        session.pop('ig_username', None)
+        session.pop('ig_password', None)
+        session.pop('proxy_ip', None)
+        session.pop('proxy_port', None)
+        session.pop('proxy_username', None)
+        session.pop('proxy_password', None)
+        return "Two-factor authentication successful!"
+    except Exception as e:
+        return f"Two-factor authentication failed: {str(e)}", 400
 
 def read_users_from_csv(file_path):
     users = []
