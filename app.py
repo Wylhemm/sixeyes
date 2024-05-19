@@ -115,9 +115,15 @@ def challenge_route():
     
     client = Client()
     client.set_proxy(f"http://{proxy_username}:{proxy_password}@{proxy_ip}:{proxy_port}")
-    
+
+    # Custom handler to replace input method
+    def challenge_code_handler(username, choice):
+        return challenge_code
+
+    client.challenge_code_handler = challenge_code_handler
+
     try:
-        client.challenge_resolve_manual(challenge_url, challenge_code)
+        client.challenge_resolve(challenge_url)
         session.pop('challenge', None)
         session.pop('challenge_url', None)
         session.pop('ig_username', None)
